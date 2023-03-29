@@ -1,4 +1,4 @@
-module swisskid/aweful-dns
+module github.com/swisskid/aweful-dns
 
 go 1.20
 
