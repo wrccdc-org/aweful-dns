@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/miekg/dns"
 )
@@ -35,11 +39,41 @@ func main() {
 	} else {
 		host = appConfigs.DNSConfigs["host"].(string)
 	}
+	var internal_mask string
+	var external_mask string
+	var mask_proxy_server string
+	if appConfigs.DNSConfigs["mask_proxy_server"] == nil {
+		mask_proxy_server = "http://checkip.amazonaws.com"
+	} else {
+		mask_proxy_server = appConfigs.DNSConfigs["mask_proxy_server"].(string)
+	}
+	if appConfigs.DNSConfigs["internal_mask"] == nil {
+		ip, err := GetOutboundIP()
+		if err != nil {
+			logger.Fatalf("Failed to get outbound address: %s\n ", err.Error())
+		}
+		internal_mask = strings.Join(strings.Split(ip.String(), ".")[0:3], ".") + "."
+	} else {
+		internal_mask = appConfigs.DNSConfigs["internal_mask"].(string)
+	}
+
+	if appConfigs.DNSConfigs["external_mask"] == nil {
+		resp, err := http.Get(mask_proxy_server)
+		if err != nil {
+			logger.Fatalf("idk some error %s\n", err.Error())
+		}
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		ip_string := fmt.Sprintf("%s", body)
+		external_mask = strings.Join(strings.Split(ip_string, ".")[0:3], ".") + "."
+	} else {
+		external_mask = appConfigs.DNSConfigs["external_mask"].(string)
+	}
 
 	dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
 		switch r.Opcode {
 		case dns.OpcodeQuery:
-			m, err := dnsProxy.getResponse(r)
+			m, err := dnsProxy.getResponse(r, internal_mask, external_mask)
 			if err != nil {
 				logger.Errorf("Failed lookup for %s with error: %s\n", r, err.Error())
 				m.SetReply(r)

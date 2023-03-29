@@ -1,10 +1,12 @@
 {
-    "host": "192.168.1.4:53",
+    "host": "127.0.0.23:53",
     "defaultDns": "8.8.8.8:53",
     "servers": {
         "google.com" : "8.8.8.8:53"
     },
     "domains": {
         "test.com." : "8.8.8.8"
-    }
+    },
+    "internal_mask": "64.90.40.",
+    "external_mMask": "123.123.123."
 }

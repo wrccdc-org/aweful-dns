@@ -1,3 +1,8 @@
+# Swiss's Aweful DNS
+A fork-ish of [github.com/katakonst/go-dns-proxy](https://github.com/katakonst/go-dns-proxy) designed specifically for WRCCDC's NAT magic.
+
+Goal here is to find an outbound address, and then translate all but the last octet from internal address to external.
+
 # DNS Proxy
 A simple DNS proxy written in go based on [github.com/miekg/dns](https://github.com/miekg/dns)
 

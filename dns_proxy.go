@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strings"
 
 	"github.com/miekg/dns"
 )
@@ -15,7 +16,7 @@ type DNSProxy struct {
 	defaultServer string
 }
 
-func (proxy *DNSProxy) getResponse(requestMsg *dns.Msg) (*dns.Msg, error) {
+func (proxy *DNSProxy) getResponse(requestMsg *dns.Msg, internal_mask string, external_mask string) (*dns.Msg, error) {
 	responseMsg := new(dns.Msg)
 	if len(requestMsg.Question) > 0 {
 		question := requestMsg.Question[0]
@@ -27,7 +28,7 @@ func (proxy *DNSProxy) getResponse(requestMsg *dns.Msg) (*dns.Msg, error) {
 
 		switch question.Qtype {
 		case dns.TypeA:
-			answer, err := proxy.processTypeA(dnsServer, &question, requestMsg)
+			answer, err := proxy.processTypeA(dnsServer, &question, requestMsg, internal_mask, external_mask)
 			if err != nil {
 				return responseMsg, err
 			}
@@ -61,7 +62,7 @@ func (proxy *DNSProxy) processOtherTypes(dnsServer string, q *dns.Question, requ
 	return nil, fmt.Errorf("not found")
 }
 
-func (proxy *DNSProxy) processTypeA(dnsServer string, q *dns.Question, requestMsg *dns.Msg) (*dns.RR, error) {
+func (proxy *DNSProxy) processTypeA(dnsServer string, q *dns.Question, requestMsg *dns.Msg, internal_mask string, external_mask string) (*dns.RR, error) {
 	ip := proxy.getIPFromConfigs(q.Name, proxy.domains)
 	cacheMsg, found := proxy.Cache.Get(q.Name)
 
@@ -69,6 +70,10 @@ func (proxy *DNSProxy) processTypeA(dnsServer string, q *dns.Question, requestMs
 		queryMsg := new(dns.Msg)
 		requestMsg.CopyTo(queryMsg)
 		queryMsg.Question = []dns.Question{*q}
+		team_pattern := regexp.MustCompile(`\.team\d+\.`)
+		if team_pattern.MatchString((queryMsg.Question[0].Name)) {
+			queryMsg.Question[0].Name = team_pattern.ReplaceAllString(queryMsg.Question[0].Name, ".")
+		}
 
 		msg, err := lookup(dnsServer, queryMsg)
 		if err != nil {
@@ -76,8 +81,17 @@ func (proxy *DNSProxy) processTypeA(dnsServer string, q *dns.Question, requestMs
 		}
 
 		if len(msg.Answer) > 0 {
-			proxy.Cache.Set(q.Name, &msg.Answer[len(msg.Answer)-1])
-			return &msg.Answer[len(msg.Answer)-1], nil
+			// proxy.Cache.Set(q.Name, &msg.Answer[len(msg.Answer)-1])
+			// var pre_answer dns.A
+			pre_answer := strings.Split(msg.Answer[len(msg.Answer)-1].String(), "\t")
+			better_data := pre_answer[len(pre_answer)-1]
+			new_addr := strings.Replace(better_data, internal_mask, external_mask, -1)
+			fmt.Println("chris test", new_addr)
+			answer, err := dns.NewRR(fmt.Sprintf("%s A %s", q.Name, new_addr))
+			if err != nil {
+				return nil, err
+			}
+			return &answer, nil
 		}
 
 	} else if found {
