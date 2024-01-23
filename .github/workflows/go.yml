@@ -1,0 +1,40 @@
+
+name: Go
+on: 
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        container:
+            image: alpine:3.19
+        steps:
+            - uses: actions/checkout@v4
+            - name: Get version
+              id: versioning
+              uses: flynshue/version-action@v0.0.1
+            - name: Set up Go 1.21.6
+              uses: actions/setup-go@v5
+              with:
+                  go-version: 1.21.6
+            - name: Install dependencies
+              run: |
+                    go get 
+            - name: Build
+              run: |
+                    go build -v -o ./bin/
+            - name: Release
+              id: release
+              uses: softprops/action-gh-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  files: |
+                          bin/*
+                  tag_name: ${{ steps.versioning.outputs.version }}
+                  name: Release ${{ github.event.head_commit.message }}
+                  body: |
+                         Release ${{ github.ref }}

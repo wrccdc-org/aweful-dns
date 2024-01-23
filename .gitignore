@@ -1,0 +1,6 @@
+.git
+/bin/
+/pkg/
+*.swp
+.vscode/
+.DS_Store

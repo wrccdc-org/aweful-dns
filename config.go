@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
+	"os"
 )
 
 type Config struct {
@@ -13,38 +13,39 @@ type Config struct {
 	LogLevel        string
 }
 
-func InitConfig() (Config, error) {
-	fileName := flag.String("file", "config.json", "config filename")
+func InitConfig() (string, bool, string, string, error) {
 	logLevel := flag.String("log-level", "info", "log level")
-	expiration := flag.Int64("expiration", -1, "expiration time in seconds")
 	useOutbound := flag.Bool("use-outbound", false, "use outbound address")
-	cliConfigs := flag.String("json-config", "", "config in json format")
+	configDir := flag.String("config-dir", "/root/aweful-dns-confs", "directory containing config files")
+	dnsmasqConfig := flag.String("dnsmasq-file", "/etc/dnsmasq.d/aweful-dns.conf", "dnsmasq config file to write (this will be overwritten)")
 	flag.Parse()
 
-	dnsConfigs := make(map[string]interface{})
-	if *cliConfigs == "" {
-		var err error
-		dnsConfigs, err = parseFile(*fileName)
-		if err != nil {
-			return Config{}, err
-		}
-	} else {
-		if err := json.Unmarshal([]byte(*cliConfigs), &dnsConfigs); err != nil {
-			return Config{}, err
-		}
+	err := clearDnsmasqConfig(*dnsmasqConfig)
+	if err != nil {
+		return "", false, "", "", err
 	}
 
-	return Config{
-		DNSConfigs:      dnsConfigs,
-		CacheExpiration: *expiration * 1000000000,
-		UseOutbound:     *useOutbound,
-		LogLevel:        *logLevel,
-	}, nil
+	return *logLevel, *useOutbound, *configDir, *dnsmasqConfig, nil
 }
 
-func parseFile(filePath string) (map[string]interface{}, error) {
+func clearDnsmasqConfig(filePath string) error {
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString("#Aweful dnsmasq config file\n#Warning: this file will be overwritten\n")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ParseFile(filePath string) (map[string]interface{}, error) {
 	fileContents := make(map[string]interface{})
-	body, err := ioutil.ReadFile(filePath)
+	body, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}

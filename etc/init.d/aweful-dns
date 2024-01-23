@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+
+name="busybox $RC_SVCNAME"
+command="/root/aweful-dns"
+pidfile="/run/$RC_SVCNAME.pid"
+command_args=""
+command_background=true
+output_log="/var/log/aweful-dns.log"
+error_log="/var/log/aweful-dns.log"
+
+depend() {
+        need localmount
+        need logger
+}
+
+start_post() {
+        # reload dnsmasq service since we modified the config
+        /etc/init.d/dnsmasq reload
+}
