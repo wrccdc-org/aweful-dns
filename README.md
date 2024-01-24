@@ -4,7 +4,9 @@ A fork-ish of [github.com/katakonst/go-dns-proxy](https://github.com/katakonst/g
 Goal here is to find an outbound address, and then translate all but the last octet from internal address to external.
 
 # Tirefire's updates
-This project is designed to dynamically configure and run multiple DNS proxy servers for different teams. This intercepts DNS A record requests for names which match one of four patterns for the custom team domains. This strips that portion and based on the number found in the team# it forwards the request on to the configured proxy. It generates dnsmasq configuration files to handle requests with team# in them so that they're then sent on to the proxy listening on a localhost IP address. It then replaces responses in the internal_mask range with the external_mask and forwards that on to the end user.
+This configures and run multiple DNS proxy servers for different teams. 
+
+The proxy intercepts DNS `A record` requests for names which match one of four patterns for the custom team domains. This strips that portion and based on the number found in the team# it forwards the request on to the configured proxy. It generates dnsmasq configuration files to handle requests with team# in them so that they're then sent on to the proxy listening on a localhost IP address. It then replaces responses in the internal_mask range with the external_mask and forwards that on to the end user.
 
 This relies on JSON configurations located in `/root/aweful-dns-confs`. The config describes an environment with a specific domain:
 
