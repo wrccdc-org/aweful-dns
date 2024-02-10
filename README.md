@@ -51,5 +51,7 @@ The configurations are appended to the dnsmasq configuration file specified in t
   * Configuration Directory: The application expects /root/aweful-dns-confs directory for configuration files, or as passed in the startup arguments.
   * Network: It assumes all networks are /24 and that there won't be more than 99 teams (101-199), and that all teams will have the same DNS server IP address, and that there will be a 1-to-1 NAT from external to internal.
 
+  NOTE: `bind-interfaces`, `listen-address=127.0.0.1,10.10.10.53`, and `interface=eth0` will need to be set in `dnsmasq.conf` so that dnsmasq doesn't listen on `0.0.0.0:53` otherwise awefuldns can't bind to arbitrary localhost ip addresses.
+
 # DNS Proxy
 A modification of the simple DNS proxy written in go based on [github.com/miekg/dns](https://github.com/miekg/dns)

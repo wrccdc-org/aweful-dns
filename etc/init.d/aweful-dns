@@ -14,6 +14,7 @@ depend() {
 }
 
 start_post() {
-        # reload dnsmasq service since we modified the config
-        /etc/init.d/dnsmasq reload
+        # restart dnsmasq service since we modified the config
+        # reload doesn't work if the config was previously loaded, but was modified
+        /etc/init.d/dnsmasq restart
 }
